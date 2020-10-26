@@ -1,6 +1,6 @@
 {
   "name": "express-mvc-starter",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "author": {
     "name": "Nedko Dimitrov"
@@ -8,12 +8,12 @@
   "scripts": {
     "start": "node ./bin/www",
     "dev": "nodemon --inspect ./bin/www",
-    "migrate:run": "./node_modules/knex/bin/cli.js migrate:latest",
-    "migrate:up": "./node_modules/knex/bin/cli.js migrate:up",
-    "migrate:undo": "./node_modules/knex/bin/cli.js migrate:down",
-    "migrate:status": "./node_modules/knex/bin/cli.js migrate:status",
-    "migrate:rollback": "./node_modules/knex/bin/cli.js migrate:rollback --all",
-    "migrate:create": "./node_modules/knex/bin/cli.js migrate:make"
+    "migrate:all": "./node_modules/knex/bin/cli.js --knexfile ./config/knexfile.js migrate:latest",
+    "migrate:up": "./node_modules/knex/bin/cli.js --knexfile ./config/knexfile.js migrate:up",
+    "migrate:undo": "./node_modules/knex/bin/cli.js --knexfile ./config/knexfile.js migrate:down",
+    "migrate:status": "./node_modules/knex/bin/cli.js --knexfile ./config/knexfile.js migrate:status",
+    "migrate:rollback": "./node_modules/knex/bin/cli.js --knexfile ./config/knexfile.js migrate:rollback --all",
+    "migrate:create": "./node_modules/knex/bin/cli.js --knexfile ./config/knexfile.js migrate:make"
   },
   "dependencies": {
     "bcrypt": "^5.0.0",

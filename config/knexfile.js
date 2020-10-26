@@ -1,4 +1,5 @@
-require('dotenv').config()
+require('dotenv').config({ path: '../.env'})
+const path = require("path")
 
 module.exports = {
   development: {
@@ -14,10 +15,10 @@ module.exports = {
     },
     migrations: {
       tableName: process.env.DATABASE_MIGRATIONS_TABLE,
-      directory: __dirname + '/database/migrations'
+      directory: path.join(__dirname, '../database/migrations')
     },
     seeds: {
-      directory: __dirname + '/database/seeds'
+      directory: path.join(__dirname, '../database/seeds')
     },
     debug: false
   },
@@ -34,7 +35,7 @@ module.exports = {
     },
     migrations: {
       tableName: process.env.DATABASE_MIGRATIONS_TABLE,
-      directory: __dirname + '/database/migrations'
+      directory: path.join(__dirname, '../database/migrations')
     },
     debug: false
   }
