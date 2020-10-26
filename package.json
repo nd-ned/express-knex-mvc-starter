@@ -1,0 +1,32 @@
+{
+  "name": "express-mvc-starter",
+  "version": "0.0.1",
+  "private": true,
+  "author": {
+    "name": "Nedko Dimitrov"
+  },
+  "scripts": {
+    "start": "node ./bin/www",
+    "dev": "nodemon --inspect ./bin/www",
+    "migrate:run": "./node_modules/knex/bin/cli.js migrate:latest",
+    "migrate:up": "./node_modules/knex/bin/cli.js migrate:up",
+    "migrate:undo": "./node_modules/knex/bin/cli.js migrate:down",
+    "migrate:status": "./node_modules/knex/bin/cli.js migrate:status",
+    "migrate:rollback": "./node_modules/knex/bin/cli.js migrate:rollback --all",
+    "migrate:create": "./node_modules/knex/bin/cli.js migrate:make"
+  },
+  "dependencies": {
+    "bcrypt": "^5.0.0",
+    "cookie-parser": "~1.4.4",
+    "debug": "~2.6.9",
+    "dotenv": "^8.2.0",
+    "express": "~4.16.1",
+    "express-session": "^1.17.1",
+    "knex": "^0.21.6",
+    "morgan": "~1.9.1",
+    "mysql": "^2.18.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.4"
+  }
+}
