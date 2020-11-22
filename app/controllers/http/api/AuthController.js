@@ -1,9 +1,9 @@
 'use strict'
 
-const User = require('../models/User')
-const Token = require('../models/Token')
-const AuthService = require('../services/AuthService')
-const Validator = require('../services/Validator')
+const User = require('../../../models/User')
+const Token = require('../../../models/Token')
+const AuthService = require('../../../services/AuthService')
+const Validator = require('../../../services/Validator')
 
 const _enforceUniqueToken = async (type, string) => {
     if (await Token.findOne({[type]: string})) {

@@ -1,6 +1,6 @@
 'use strict'
 
-const User = require('../models/User')
+const User = require('../../../models/User')
 
 class UserController {
     static async getAll(req, res, next) {
