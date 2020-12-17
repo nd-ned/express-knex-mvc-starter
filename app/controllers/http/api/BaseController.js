@@ -44,7 +44,6 @@ class BaseController {
             })
 
             const result = await this.Model.create({...createData})
-            console.log(result)
 
             const entity = await this.Model.findById(result[0])
 

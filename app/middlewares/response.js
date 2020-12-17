@@ -76,6 +76,22 @@ module.exports = (req, res, next) => {
         })
     }
 
+    res.apiPaymentRequired = message => {
+        res.status(402).json({
+            code: 402,
+            type: 'Payment Required',
+            message: message || '402 Payment Required'
+        })
+    }
+
+    res.apiForbidden = message => {
+        res.status(403).json({
+            code: 403,
+            type: 'Forbidden',
+            message: message || '403 Forbidden'
+        })
+    }
+
     res.apiNotFound = message => {
         if (!message) {
             parameterUndefinedErr('message')

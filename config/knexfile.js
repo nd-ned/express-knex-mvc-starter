@@ -7,7 +7,8 @@ module.exports = {
     connection: {
       database: process.env.DATABASE_NAME,
       user: process.env.DATABASE_USER,
-      password: process.env.DATABASE_PASSWORD
+      password: process.env.DATABASE_PASSWORD,
+      charset  : 'utf8'
     },
     pool: {
       min: 2,
@@ -27,7 +28,8 @@ module.exports = {
     connection: {
       database: process.env.DATABASE_NAME,
       user: process.env.DATABASE_USER,
-      password: process.env.DATABASE_PASSWORD
+      password: process.env.DATABASE_PASSWORD,
+      charset  : 'utf8'
     },
     pool: {
       min: 2,

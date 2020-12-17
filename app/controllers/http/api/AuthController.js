@@ -56,7 +56,7 @@ class AuthController {
 
     static async register(req, res, next) {
         try {
-            const failed = Validator.checkRequiredFields(['name', 'email', 'username', 'password'])
+            const failed = Validator.checkRequiredFields(req.body, ['name', 'email', 'username', 'password'])
 
             if (failed) {
                 return res.apiBadRequest("Missing mandatory paramers: " + failed.join(','))
