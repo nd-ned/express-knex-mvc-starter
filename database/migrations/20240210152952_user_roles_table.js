@@ -11,7 +11,7 @@ exports.up = async function (knex) {
   await knex.schema.createTable("user_role_pivot", function (table) {
     table.string("user_id", 450).notNullable();
     table.string("role_id", 450).notNullable();
-    table.primary(["", "role_id"]);
+    table.primary(["user_id", "role_id"]);
   });
 };
 
