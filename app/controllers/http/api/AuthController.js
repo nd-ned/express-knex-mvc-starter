@@ -1,12 +1,9 @@
 "use strict";
 
-const { v4: uuidv4 } = require("uuid");
-
-const AspNetUser = require("../../../models/User");
+const User = require("../../../models/User");
 const AuthService = require("../../../services/AuthService");
 const Validator = require("../../../services/Validator");
-const AspNetRole = require("../../../models/UserRole");
-const Family = require("../../../models/Family");
+const UserRole = require("../../../models/UserRole");
 const System = require("../../../services/System");
 
 class AuthController {
@@ -18,7 +15,7 @@ class AuthController {
         return res.apiBadRequest("Missing mandatory paramer email");
       }
 
-      if (await AspNetUser.findOne({ email })) {
+      if (await User.findOne({ email })) {
         return res.apiConflict(`email ${email} already taken!`);
       }
 
@@ -49,30 +46,21 @@ class AuthController {
         return res.apiUnprocessableEntity(`Invalid email address ${email}!`);
       }
 
-      if (await AspNetUser.findOne({ email: email }, ["Id"])) {
+      if (await User.findOne({ email: email }, ["id"])) {
         return res.apiConflict(`email address ${email} already taken!`);
       }
 
-      const PasswordHash = AuthService.hashPassword(password);
+      const password_hash = AuthService.hashPassword(password);
       const newUserId = uuidv4();
 
-      await AspNetUser.create({
-        id: newUserId,
+      await User.create({
         email,
-        password_hash: PasswordHash,
+        password_hash: password_hash,
       });
 
-      const adminRole = await AspNetRole.findOne({ Name: "Admin" }, ["Id"]);
+      const adminRole = await UserRole.findOne({ name: "admin" }, ["id"]);
 
-      await AspNetUser.setRole(newUserId, adminRole.Id);
-
-      const names = UserName.split(" ");
-      const familyName = names[1] || names[0];
-
-      await Family.create({
-        name: familyName,
-        owner_id: newUserId,
-      });
+      await User.setRole(newUserId, adminRole.id);
 
       return AuthController.login(req, res, next);
     } catch (e) {
@@ -92,13 +80,10 @@ class AuthController {
         );
       }
 
-      const user = await AspNetUser.findOne({ email }, [
-        "Id",
-        "UserName",
+      const user = await User.findOne({ email }, [
+        "id",
         "email",
-        "PhoneNumber",
-        "AccessFailedCount",
-        "PasswordHash",
+        "password_hash",
         "avatar",
       ]);
 
@@ -106,19 +91,18 @@ class AuthController {
         return res.apiUnauthorized("Invalid email or password!");
       }
 
-      if (!AuthService.verifyPassword(password, user.PasswordHash)) {
+      if (!AuthService.verifyPassword(password, user.password_hash)) {
         return res.apiUnauthorized("Invalid email or password!");
       }
 
-      delete user.PasswordHash;
+      delete user.password_hash;
 
-      const role = await AspNetUser.getRole(user.Id);
+      const role = await User.getRole(user.id);
 
-      user.role = role.Name;
-      user.isOwner = await Family.isOwner(user.Id);
+      user.role = role.name;
 
       const tokenData = AuthService.generateJWTToken({
-        Id: user.Id,
+        id: user.id,
         email: user.email,
       });
 
@@ -132,8 +116,8 @@ class AuthController {
 
   static async refreshToken(req, res, next) {
     try {
-      const { Id, email } = req.auth.user;
-      const tokenData = AuthService.generateJWTToken({ Id, email });
+      const { id, email } = req.auth.user;
+      const tokenData = AuthService.generateJWTToken({ id, email });
 
       return res.apiOK("Token refreshed!", tokenData);
     } catch (e) {
@@ -147,8 +131,7 @@ class AuthController {
     try {
       const { user, decoded } = req.auth;
 
-      user.role = user.role.Name;
-      user.isOwner = await Family.isOwner(user.Id);
+      user.role = user.role.name;
 
       return res.apiOK("User details!", user, decoded);
     } catch (e) {
@@ -162,7 +145,7 @@ class AuthController {
     try {
       const { user } = req.auth;
       const {
-        Id,
+        id,
         UserName,
         email,
         currentPassword,
@@ -174,12 +157,12 @@ class AuthController {
         UserName,
       };
 
-      if (Id !== user.Id) {
+      if (id !== user.id) {
         return res.apiForbidden();
       }
 
       if (user.email !== email) {
-        const newEmailCheck = await AspNetUser.findOne({ email }, ["Id"]);
+        const newEmailCheck = await User.findOne({ email }, ["id"]);
 
         if (newEmailCheck) {
           return res.apiConflict(`email ${email} already taken!`);
@@ -189,8 +172,8 @@ class AuthController {
       }
 
       if (currentPassword && newPassword) {
-        if (AuthService.verifyPassword(currentPassword, user.PasswordHash)) {
-          uptPayload.PasswordHash = AuthService.hashPassword(newPassword);
+        if (AuthService.verifyPassword(currentPassword, user.password_hash)) {
+          uptPayload.password_hash = AuthService.hashPassword(newPassword);
         } else {
           return res.apiUnauthorized("Invalid current password!");
         }
@@ -205,8 +188,8 @@ class AuthController {
         uptPayload.avatar = filePath;
       }
 
-      await AspNetUser.update(uptPayload, {
-        Id,
+      await User.update(uptPayload, {
+        id,
       });
 
       return res.apiUpdated();
@@ -220,12 +203,12 @@ class AuthController {
   static async deleteMe(req, res, next) {
     try {
       const { user } = req.auth;
-      const family = await Family.findOne({ owner_id: user.Id }, ["Id"]);
+      const family = await Family.findOne({ owner_id: user.id }, ["id"]);
 
       if (family) {
-        await Family.delete(family.Id);
+        await Family.delete(family.id);
       } else {
-        await AspNetUser.deleteById(user.Id);
+        await User.deleteById(user.id);
       }
 
       return res.apiDeleted();

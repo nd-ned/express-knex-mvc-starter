@@ -56,13 +56,13 @@ class Base {
       );
     }
 
-    const created = await knex(this.table).insert(fields).returning("Id");
+    const created = await knex(this.table).insert(fields).returning("id");
 
     if (Array.isArray(created)) {
-      return created[0].Id;
+      return created[0].id;
     }
 
-    return created.Id;
+    return created.id;
   }
 
   async update(fields, criteria) {

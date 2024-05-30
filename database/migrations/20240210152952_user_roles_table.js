@@ -4,14 +4,18 @@
  */
 exports.up = async function (knex) {
   await knex.schema.createTable("user_roles", function (table) {
-    table.string("id", 450).notNullable().primary();
+    table.increments("id").primary();
     table.string("name");
   });
 
   await knex.schema.createTable("user_role_pivot", function (table) {
-    table.string("user_id", 450).notNullable();
-    table.string("role_id", 450).notNullable();
-    table.primary(["user_id", "role_id"]);
+    table.increments("id").primary();
+
+    table.integer("user_id").unsigned().notNullable();
+    table.integer("role_id").unsigned().notNullable();
+
+    table.foreign("user_id").references("id").inTable("users");
+    table.foreign("role_id").references("id").inTable("user_roles");
   });
 };
 

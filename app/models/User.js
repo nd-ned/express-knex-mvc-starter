@@ -12,8 +12,8 @@ class User extends Base {
 
   async getRole(userId) {
     return await UserRole.knex
-      .select(["r.Name", "r.id"])
-      .from("UserRole as r")
+      .select(["r.name", "r.id"])
+      .from("user_roles as r")
       .innerJoin("user_role_pivot as ur", "r.id", "ur.role_id")
       .where("ur.user_id", userId)
       .first();

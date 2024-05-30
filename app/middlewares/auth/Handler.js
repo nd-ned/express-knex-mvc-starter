@@ -11,17 +11,17 @@ class Handler {
         return res.apiUnauthorized("Token expired!");
       }
 
-      if (!decoded?.Id) {
+      if (!decoded?.id) {
         return res.apiUnauthorized("Invalid token!");
       }
 
-      const user = await AspNetUser.findOne({ Id: decoded.Id });
+      const user = await AspNetUser.findOne({ id: decoded.id });
 
       if (!user) {
         return res.apiUnauthorized("Token expired!");
       }
 
-      const role = await AspNetUser.getRole(decoded.Id);
+      const role = await AspNetUser.getRole(decoded.id);
 
       user.role = role;
 
