@@ -1,34 +1,53 @@
-'use strict'
+"use strict";
 
-
-const Base = require('./Base')
-const Token = require('./Token')
+const UserRole = require("./UserRole");
+const Base = require("./Base");
 
 class User extends Base {
-    constructor() {
-        super('users')
+  constructor() {
+    super("User");
 
-        this.columns = ['id', 'name', 'username', 'email', 'created_at', 'updated_at']
-    }
+    this.columns = ["id", "email", "password_hash"];
+  }
 
-    async withTokens(id) {
-        const user = await this.findById(id)
-        user.tokens = await Token.findAll({user_id: user.id})
+  async getRole(userId) {
+    return await UserRole.knex
+      .select(["r.Name", "r.id"])
+      .from("UserRole as r")
+      .innerJoin("user_role_pivot as ur", "r.id", "ur.role_id")
+      .where("ur.user_id", userId)
+      .first();
+  }
 
-        return user
-    }
+  async setRole(userId, roleId) {
+    return await UserRole.knex("user_role_pivot").insert({
+      user_id: userId,
+      role_id: roleId,
+    });
+  }
 
-    async getByBearer(access_token) {
-        const token = await Token.findOne({access_token})
-        
-        if (!token) return null
+  async removeRole(userId, roleId) {
+    return await UserRole.knex("user_role_pivot")
+      .where({ user_id: userId, role_id: roleId })
+      .del();
+  }
 
-        const user = await this.findById(token.user_id)
+  async updateRole(userId, roleId) {
+    return await UserRole.knex("user_role_pivot")
+      .where({ user_id: userId })
+      .update({ role_id: roleId });
+  }
 
-        user.token = token
+  async findInIds(ids, fields = []) {
+    return await this.knex
+      .select(fields.length > 0 ? fields : this.columns)
+      .from(this.table)
+      .whereIn("id", ids);
+  }
 
-        return user
-    }
+  async deleteInIds(ids) {
+    return await this.knex(this.table).whereIn("id", ids).del();
+  }
 }
 
-module.exports = new User()
+module.exports = new User();

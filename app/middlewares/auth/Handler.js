@@ -1,54 +1,57 @@
-'use strict'
+"use strict";
 
-
-const User = require('../../models/User')
+const AspNetUser = require("../../models/User");
 
 class Handler {
-  
-  static requireAuth(req, res, next) {
-    if (!req.auth.bearer) {
-      return res.apiBadRequest("Bearer token not provided")
+  static async requireAuth(req, res, next) {
+    try {
+      const { decoded } = req.auth;
+
+      if (decoded?.exp < new Date().getTime()) {
+        return res.apiUnauthorized("Token expired!");
+      }
+
+      if (!decoded?.Id) {
+        return res.apiUnauthorized("Invalid token!");
+      }
+
+      const user = await AspNetUser.findOne({ Id: decoded.Id });
+
+      if (!user) {
+        return res.apiUnauthorized("Token expired!");
+      }
+
+      const role = await AspNetUser.getRole(decoded.Id);
+
+      user.role = role;
+
+      req.auth.user = user;
+    } catch (e) {
+      console.error("auth middleware error", e);
+      return res.apiUnauthorized("Invalid token!");
     }
 
-    if (!req.auth.user) {
-      return res.apiUnauthorized("Token expired!")
-    }
-
-    const tokenExpirationDate = new Date(new Date().getTime() + parseInt(process.env.TOKEN_EXPIRATION_IN_HOURS) * 60 * 60 * 1000)
-
-    if (tokenExpirationDate < new Date()) {
-      return res.apiUnauthorized("Token expired!")
-    }
-
-    next()
+    next();
   }
 
   static async requiresAuthAndVerification(req, res, next) {
-    Handler.requireAuth(req, res, function() {
+    Handler.requireAuth(req, res, function () {
       // TODO: add verification
-      next()
-    })
+      next();
+    });
   }
 
   static async onlyOwnerAccess(req, res, next) {
-
-    
-    Handler.requireAuth(req, res, function() {
-      
-      // TODO: add admin access rule
+    Handler.requireAuth(req, res, function () {
       if (req.auth.user && req.auth.user.id !== parseInt(req.params.user_id)) {
-        return res.apiForbidden()
+        return res.apiForbidden();
       }
 
-      next()
-    })
-
-
+      next();
+    });
   }
 
-  static allowAdminAccess(req, res, next) {
-
-  }
+  static allowAdminAccess(req, res, next) {}
 }
 
-module.exports = Handler
+module.exports = Handler;

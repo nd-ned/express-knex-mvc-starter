@@ -1,78 +1,103 @@
-'use strict'
+"use strict";
 
-const knex = require('../../database/knex')
+const knex = require("../../database/knex");
 
 class Base {
-    constructor(table) {
-        if (!table) {
-            throw new Error('Missing mandatory property table')
-        }
-
-        this.table = table
-        this.knex = knex
-        this.columns = []
+  constructor(table) {
+    if (!table) {
+      throw new Error("Missing mandatory property table");
     }
 
-    async findById(id, fields = []) {
-        if (!id) {
-            throw new Error('Missing mandatory property id')
-        }
+    this.table = table;
+    this.knex = knex;
+    this.columns = [];
+  }
 
-        return knex(this.table).select(fields.length > 0 ? fields : this.columns).where({id}).first()
+  async findById(id, fields = []) {
+    if (!id) {
+      throw new Error("Missing mandatory property id");
     }
 
-    async findOne(criteria, fields = []) {
-        if (!criteria || typeof criteria !== 'object') {
-            throw new Error('Missing mandatory property creteria or it is not an object')
-        }
+    return knex(this.table)
+      .select(fields.length > 0 ? fields : this.columns)
+      .where({ id })
+      .first();
+  }
 
-        return knex(this.table).select(fields.length > 0 ? fields : this.columns).where(criteria).first()
+  async findOne(criteria, fields = []) {
+    if (!criteria || typeof criteria !== "object") {
+      throw new Error(
+        "Missing mandatory property creteria or it is not an object"
+      );
     }
 
-    async findAll(criteria = {}, fields = []) {
-        if (!criteria || typeof criteria !== 'object') {
-            throw new Error('Missing mandatory property creteria or it is not an object')
-        }
+    return knex(this.table)
+      .select(fields.length > 0 ? fields : this.columns)
+      .where(criteria)
+      .first();
+  }
 
-        return knex(this.table).select(fields.length > 0 ? fields : this.columns).where(criteria)
+  async findAll(criteria = {}, fields = []) {
+    if (!criteria || typeof criteria !== "object") {
+      throw new Error(
+        "Missing mandatory property creteria or it is not an object"
+      );
     }
 
-    async create(fields) {
-        if (!fields || typeof fields !== 'object') {
-            throw new Error('Missing mandatory property fields or it is not an object')
-        }
+    return knex(this.table)
+      .select(fields.length > 0 ? fields : this.columns)
+      .where(criteria);
+  }
 
-        return knex(this.table).insert(fields)
+  async create(fields) {
+    if (!fields || typeof fields !== "object") {
+      throw new Error(
+        "Missing mandatory property fields or it is not an object"
+      );
     }
 
-    async update(fields, criteria) {
-        if (!fields || typeof fields !== 'object') {
-            throw new Error('Missing mandatory property fields or it is not an object')
-        }
+    const created = await knex(this.table).insert(fields).returning("Id");
 
-        if (!criteria || typeof criteria !== 'object') {
-            throw new Error('Missing mandatory property creteria or it is not an object')
-        }
-
-        return knex(this.table).update(fields).where(criteria)
+    if (Array.isArray(created)) {
+      return created[0].Id;
     }
 
-    async delete(criteria) {
-        if (!criteria || typeof criteria !== 'object') {
-            throw new Error('Missing mandatory property creteria or it is not an object')
-        }
+    return created.Id;
+  }
 
-        return knex(this.table).del().where(criteria)
+  async update(fields, criteria) {
+    if (!fields || typeof fields !== "object") {
+      throw new Error(
+        "Missing mandatory property fields or it is not an object"
+      );
     }
 
-    async deleteById(id) {
-        if (!id) {
-            throw new Error('Missing mandatory property id')
-        }
-
-        return knex(this.table).del().where({id})
+    if (!criteria || typeof criteria !== "object") {
+      throw new Error(
+        "Missing mandatory property creteria or it is not an object"
+      );
     }
 
+    return knex(this.table).update(fields).where(criteria);
+  }
+
+  async delete(criteria) {
+    if (!criteria || typeof criteria !== "object") {
+      throw new Error(
+        "Missing mandatory property creteria or it is not an object"
+      );
+    }
+
+    return knex(this.table).del().where(criteria);
+  }
+
+  async deleteById(id) {
+    if (!id) {
+      throw new Error("Missing mandatory property id");
+    }
+
+    return knex(this.table).del().where({ id });
+  }
 }
 
-module.exports = Base
+module.exports = Base;

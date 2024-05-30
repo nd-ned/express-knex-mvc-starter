@@ -1,137 +1,240 @@
-'use strict'
+"use strict";
 
-const User = require('../../../models/User')
-const Token = require('../../../models/Token')
-const AuthService = require('../../../services/AuthService')
-const Validator = require('../../../services/Validator')
+const { v4: uuidv4 } = require("uuid");
 
-const _enforceUniqueToken = async (type, string) => {
-    if (await Token.findOne({[type]: string})) {
-        return _enforceUniqueToken(type, AuthService.generateToken_E())
-    }
-
-    return string
-}
+const AspNetUser = require("../../../models/User");
+const AuthService = require("../../../services/AuthService");
+const Validator = require("../../../services/Validator");
+const AspNetRole = require("../../../models/UserRole");
+const Family = require("../../../models/Family");
+const System = require("../../../services/System");
 
 class AuthController {
-    static async checkEmail(req, res, next) {
-        try {
-            const email = req.body.email
+  static async checkEmail(req, res, next) {
+    try {
+      const email = req.body.email;
 
-            if (!email) {
-                return res.apiBadRequest("Missing mandatory paramer email")
-            }
+      if (!email) {
+        return res.apiBadRequest("Missing mandatory paramer email");
+      }
 
-            if (await User.findOne({email})) {
-                return res.apiConflict(`Email ${email} already taken!`)
-            }
+      if (await AspNetUser.findOne({ email })) {
+        return res.apiConflict(`email ${email} already taken!`);
+      }
 
-            return res.apiAccepted("Email currently available!")
-        } catch (e) {
-            next(e)
-        }
+      return res.apiAccepted("email currently available!");
+    } catch (e) {
+      console.error(e);
+
+      next(e);
     }
+  }
 
-    static async checkUsername(req, res, next) {
-        try {
-            const username = req.body.username
+  static async register(req, res, next) {
+    try {
+      const failed = Validator.checkRequiredFields(req.body, [
+        "email",
+        "password",
+      ]);
 
-            if (!username) {
-                return res.apiBadRequest("Missing mandatory parameter username")
-            }
+      if (failed) {
+        return res.apiBadRequest(
+          "Missing mandatory paramers: " + failed.join(",")
+        );
+      }
 
-            if (Validator.invalidateUsername(username)) {
-                return res.apiUnprocessableEntity("Invalid username! It must validate [a-z0-9]{4-20}")
-            }
-            
-            if (await User.findOne({username})) {
-                return res.apiConflict(`Username ${username} already taken!`)
-            }
+      const { email, UserName, password } = req.body;
 
-            return res.apiAccepted("Username currently available!")
-        } catch (e) {
-            next(e)
-        }
+      if (Validator.invalidateEmail(email)) {
+        return res.apiUnprocessableEntity(`Invalid email address ${email}!`);
+      }
+
+      if (await AspNetUser.findOne({ email: email }, ["Id"])) {
+        return res.apiConflict(`email address ${email} already taken!`);
+      }
+
+      const PasswordHash = AuthService.hashPassword(password);
+      const newUserId = uuidv4();
+
+      await AspNetUser.create({
+        id: newUserId,
+        email,
+        password_hash: PasswordHash,
+      });
+
+      const adminRole = await AspNetRole.findOne({ Name: "Admin" }, ["Id"]);
+
+      await AspNetUser.setRole(newUserId, adminRole.Id);
+
+      const names = UserName.split(" ");
+      const familyName = names[1] || names[0];
+
+      await Family.create({
+        name: familyName,
+        owner_id: newUserId,
+      });
+
+      return AuthController.login(req, res, next);
+    } catch (e) {
+      console.error(e);
+
+      next(e);
     }
+  }
 
-    static async register(req, res, next) {
-        try {
-            const failed = Validator.checkRequiredFields(req.body, ['name', 'email', 'username', 'password'])
+  static async login(req, res, next) {
+    try {
+      const { email, password } = req.body;
 
-            if (failed) {
-                return res.apiBadRequest("Missing mandatory paramers: " + failed.join(','))
-            }
+      if (!email || !password) {
+        return res.apiBadRequest(
+          "Missing mandatory parameters: email, password"
+        );
+      }
 
-            const { name, email, username, password } = req.body
+      const user = await AspNetUser.findOne({ email }, [
+        "Id",
+        "UserName",
+        "email",
+        "PhoneNumber",
+        "AccessFailedCount",
+        "PasswordHash",
+        "avatar",
+      ]);
 
-            if (Validator.invalidateUsername(username)) {
-                return res.apiUnprocessableEntity("Invalid username! It must validate [a-z0-9]{4-20}")
-            }
+      if (!user) {
+        return res.apiUnauthorized("Invalid email or password!");
+      }
 
-            if (await User.findOne({email})) {
-                return res.apiConflict(`Email address ${email} already taken!`)
-            } else if (await User.findOne({username})) {
-                return res.apiConflict(`Username ${username} already taken!`)
-            }
+      if (!AuthService.verifyPassword(password, user.PasswordHash)) {
+        return res.apiUnauthorized("Invalid email or password!");
+      }
 
-            const user = await User.create({
-                name,
-                email,
-                username,
-                password_hash: await AuthService.generateHash(password)
-            })
+      delete user.PasswordHash;
 
-            res.apiCreated('User created successfully', user)
-        } catch(e) {
-            next(e)
-        }
+      const role = await AspNetUser.getRole(user.Id);
+
+      user.role = role.Name;
+      user.isOwner = await Family.isOwner(user.Id);
+
+      const tokenData = AuthService.generateJWTToken({
+        Id: user.Id,
+        email: user.email,
+      });
+
+      return res.apiOK("Login successful!", user, tokenData);
+    } catch (e) {
+      console.error(e);
+
+      next(e);
     }
+  }
 
-    static async login(req, res, next) {
-        
-        try {
-            const {username, email, password} = req.body
-            let user = null
-    
-            if (!password) {
-                return res.apiBadRequest("Missing mandatory parameter password")
-            }
-    
-            if (username) {
-                user = await User.findOne({username})
+  static async refreshToken(req, res, next) {
+    try {
+      const { Id, email } = req.auth.user;
+      const tokenData = AuthService.generateJWTToken({ Id, email });
 
-                if (!user) {
-                    return res.apiNotFound("Bad username / wrong password")
-                }
+      return res.apiOK("Token refreshed!", tokenData);
+    } catch (e) {
+      console.error(e);
 
-
-            } else if (email) {
-                user = await User.findOne({username})
-
-                if (!user) {
-                    return res.apiNotFound("Bad email / wrong password")
-                }
-
-            } else {
-                return res.apiBadRequest("To login, you must provide username or email")
-            }
-
-            user.token = {
-                device: req.headers['user-agent'],
-                access_token: await _enforceUniqueToken('access_token', AuthService.generateToken_E()),
-                refresh_token: await _enforceUniqueToken('refresh_token', AuthService.generateToken_E()),
-                user_id: user.id,
-                expires_in: 86400 // 24h
-            }
-
-            await Token.create(user.token)
-
-            return res.apiOK("Login successful!", user)
-        } catch (e) {
-            next(e)
-        }
-        
+      next(e);
     }
+  }
+
+  static async me(req, res, next) {
+    try {
+      const { user, decoded } = req.auth;
+
+      user.role = user.role.Name;
+      user.isOwner = await Family.isOwner(user.Id);
+
+      return res.apiOK("User details!", user, decoded);
+    } catch (e) {
+      console.error(e);
+
+      next(e);
+    }
+  }
+
+  static async updateMe(req, res, next) {
+    try {
+      const { user } = req.auth;
+      const {
+        Id,
+        UserName,
+        email,
+        currentPassword,
+        newPassword,
+        base64avatar,
+        avatarType,
+      } = req.body;
+      const uptPayload = {
+        UserName,
+      };
+
+      if (Id !== user.Id) {
+        return res.apiForbidden();
+      }
+
+      if (user.email !== email) {
+        const newEmailCheck = await AspNetUser.findOne({ email }, ["Id"]);
+
+        if (newEmailCheck) {
+          return res.apiConflict(`email ${email} already taken!`);
+        }
+
+        uptPayload.email = email;
+      }
+
+      if (currentPassword && newPassword) {
+        if (AuthService.verifyPassword(currentPassword, user.PasswordHash)) {
+          uptPayload.PasswordHash = AuthService.hashPassword(newPassword);
+        } else {
+          return res.apiUnauthorized("Invalid current password!");
+        }
+      }
+
+      if (base64avatar) {
+        const filePath = await System.storeBase64Image({
+          base64: base64avatar,
+          type: avatarType,
+        });
+
+        uptPayload.avatar = filePath;
+      }
+
+      await AspNetUser.update(uptPayload, {
+        Id,
+      });
+
+      return res.apiUpdated();
+    } catch (e) {
+      console.error(e);
+
+      next(e);
+    }
+  }
+
+  static async deleteMe(req, res, next) {
+    try {
+      const { user } = req.auth;
+      const family = await Family.findOne({ owner_id: user.Id }, ["Id"]);
+
+      if (family) {
+        await Family.delete(family.Id);
+      } else {
+        await AspNetUser.deleteById(user.Id);
+      }
+
+      return res.apiDeleted();
+    } catch (e) {
+      console.error(e);
+
+      next(e);
+    }
+  }
 }
 
-module.exports = AuthController
+module.exports = AuthController;

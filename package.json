@@ -1,10 +1,8 @@
 {
-  "name": "express-mvc-starter",
-  "version": "0.0.3",
-  "private": true,
-  "author": {
-    "name": "Nedko Dimitrov"
-  },
+  "name": "express-knex-mvc-starter",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
   "scripts": {
     "start": "node ./bin/www",
     "dev": "nodemon --inspect ./bin/www",
@@ -14,21 +12,24 @@
     "migrate:status": "./node_modules/knex/bin/cli.js --knexfile ./config/knexfile.js migrate:status",
     "migrate:rollback": "./node_modules/knex/bin/cli.js --knexfile ./config/knexfile.js migrate:rollback --all",
     "migrate:create": "./node_modules/knex/bin/cli.js --knexfile ./config/knexfile.js migrate:make",
-    "migrate:refresh": "npm run migrate:rollback && npm run migrate:all"
+    "migrate:refresh": "npm run migrate:rollback && npm run migrate:all",
+    "generate:secret": "node -e \"console.log(require('crypto').randomBytes(80).toString('base64'))\"",
+    "generate:keys": "node -e \"require('./scripts/generateKeys.js')()\""
   },
+  "author": "",
+  "license": "ISC",
   "dependencies": {
-    "bcrypt": "^5.0.0",
-    "cookie-parser": "~1.4.4",
+    "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
-    "debug": "~2.6.9",
-    "dotenv": "^8.2.0",
-    "express": "~4.16.1",
-    "express-session": "^1.17.1",
-    "knex": "^0.21.6",
-    "morgan": "~1.9.1",
-    "mysql": "^2.18.1"
+    "debug": "^4.3.4",
+    "dotenv": "^16.4.1",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "knex": "^3.1.0",
+    "morgan": "^1.10.0",
+    "pg": "^8.11.5"
   },
   "devDependencies": {
-    "nodemon": "^2.0.4"
+    "nodemon": "^3.0.3"
   }
 }
