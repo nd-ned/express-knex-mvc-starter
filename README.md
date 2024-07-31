@@ -1,4 +1,4 @@
-# GameLimiter Backend
+# Simple Express MVC starter project
 
 This is simple MVC starter project built using Node.js and Express, with a PSQL Server database managed through Knex.
 
