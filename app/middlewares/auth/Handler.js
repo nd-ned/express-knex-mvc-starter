@@ -1,6 +1,6 @@
 "use strict";
 
-const AspNetUser = require("../../models/User");
+const User = require("../../models/User");
 
 class Handler {
   static async requireAuth(req, res, next) {
@@ -15,13 +15,13 @@ class Handler {
         return res.apiUnauthorized("Invalid token!");
       }
 
-      const user = await AspNetUser.findOne({ id: decoded.id });
+      const user = await User.findOne({ id: decoded.id });
 
       if (!user) {
         return res.apiUnauthorized("Token expired!");
       }
 
-      const role = await AspNetUser.getRole(decoded.id);
+      const role = await User.getRole(decoded.id);
 
       user.role = role;
 

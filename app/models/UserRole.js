@@ -2,12 +2,12 @@
 
 const Base = require("./Base");
 
-class AspNetRole extends Base {
+class UserRole extends Base {
   constructor() {
-    super("AspNetRoles");
+    super("user_roles");
 
     this.columns = ["id", "name"];
   }
 }
 
-module.exports = new AspNetRole();
+module.exports = new UserRole();
